@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://e288-2001-4278-50-7280-8d01-f7ea-9b28-b328.ngrok-free.app/login.php'),
+        Uri.parse('https://localhost/login.php'),
         body: {
           'email': email,
           'senha': senha,

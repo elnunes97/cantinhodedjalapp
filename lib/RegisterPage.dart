@@ -14,7 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _register() async {
     final response = await http.post(
-      Uri.parse('https://e288-2001-4278-50-7280-8d01-f7ea-9b28-b328.ngrok-free.app/register.php'),
+      Uri.parse('https://localhost/register.php'),
       body: {
         'nome': _nomeController.text,
         'email': _emailController.text,

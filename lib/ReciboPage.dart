@@ -13,13 +13,26 @@ class ReciboPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("Itens recebidos na ReciboPage: $itens"); // Depuração
+
     return Scaffold(
       appBar: AppBar(title: Text("Recibo de Compra")),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Adicionando a logo no canto superior esquerdo
+            Row(
+              children: [
+                Image.asset(
+                  'assets/logo.png',
+                  height: 80, // Ajuste o tamanho conforme necessário
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
             Text(
               "Recibo de Compra",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -35,8 +48,8 @@ class ReciboPage extends StatelessWidget {
                   final item = itens[index];
                   return ListTile(
                     title: Text("${item['produto']}"),
-                    subtitle: Text("${item['quantidade']} x XOF ${item['preco'].toStringAsFixed(2)}"),
-                    trailing: Text("XOF ${item['total'].toStringAsFixed(2)}"),
+                    subtitle: Text("${item['quantidade']} x ${item['preco'].toStringAsFixed(2)} XOF"),
+                    trailing: Text("${item['total'].toStringAsFixed(2)} XOF"),
                   );
                 },
               ),
@@ -44,7 +57,7 @@ class ReciboPage extends StatelessWidget {
             Divider(thickness: 2),
             SizedBox(height: 10),
             Text(
-              "Total da Compra: XOF ${total.toStringAsFixed(2)}",
+              "Total da Compra: ${total.toStringAsFixed(2)} XOF",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 30),

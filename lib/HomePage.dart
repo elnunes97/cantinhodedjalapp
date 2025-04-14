@@ -88,6 +88,7 @@ class _HomePageState extends State<HomePage> {
         'preco': preco,
         'total': preco * quantidade,
       });
+      print("Carrinho atualizado: $carrinho"); // Depuração
       _produtoController.clear();
       _quantidadeController.clear();
       _precoController.clear();
@@ -111,10 +112,9 @@ class _HomePageState extends State<HomePage> {
       _isLoading = true;
     });
 
-    // Enviar dados da venda para o servidor
     for (var item in carrinho) {
       final response = await http.post(
-        Uri.parse('https://605d-2001-4278-50-7280-8db-337c-411a-954f.ngrok-free.app/vender.php'),
+        Uri.parse('https://localhost/vender.php'),
         body: {
           'produto': item['produto'],
           'quantidade': item['quantidade'].toString(),
@@ -138,12 +138,14 @@ class _HomePageState extends State<HomePage> {
 
     final total = carrinho.fold(0.0, (sum, item) => sum + item['total']);
 
-    // Passando o carrinho para o recibo
+    print("Carrinho antes de navegar para o recibo: $carrinho"); // Depuração
+
+    final copiaCarrinho = List<Map<String, dynamic>>.from(carrinho); // Cria uma cópia independente
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ReciboPage(
-          itens: carrinho,
+          itens: copiaCarrinho, // Passa a cópia
           total: total,
           nomeUsuario: nomeUsuario,
         ),
@@ -163,7 +165,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _atualizarEstoque() async {
-    final response = await http.get(Uri.parse('https://e288-2001-4278-50-7280-8d01-f7ea-9b28-b328.ngrok-free.app/estoque.php'));
+    final response = await http.get(Uri.parse('https://localhost/estoque.php'));
     final data = json.decode(response.body);
     setState(() {
       produtos = List<Map<String, dynamic>>.from(data['produtos']);
@@ -186,7 +188,17 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Color(0xFFF4B000),
         centerTitle: true,
-        title: Text("Sistema de Vendas", style: TextStyle(color: Colors.white)),
+        title: Text("Sistema de Vendas", 
+        style: TextStyle(color: Colors.white)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Image.asset(
+              'assets/logo.png',
+              height: 40, // Ajuste o tamanho conforme necessário
+            ),
+          ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -225,7 +237,6 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-              // Modificação aqui: Desabilitar a aba de "Vendas do Dia" se não for admin
               TabBar(
                 tabs: [
                   Tab(text: "Vendas"),
@@ -241,7 +252,7 @@ class _HomePageState extends State<HomePage> {
                         TextField(controller: _quantidadeController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Quantidade')),
                         TextField(controller: _precoController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Preço')),
                         SizedBox(height: 10),
-                        Text("Subtotal: XOF ${totalVenda.toStringAsFixed(2)}"),
+                        Text("Subtotal: ${totalVenda.toStringAsFixed(2)} XOF"),
                         SizedBox(height: 10),
                         Row(
                           children: [
@@ -251,9 +262,6 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                         Divider(height: 30),
-                        //Text("Carrinho:", style: TextStyle(fontSize: 18,
-                        //backgroundColor: Color(0xFFF4B000))),
-
                         Row(
                           children: [
                             Icon(Icons.shopping_cart, color: Colors.black),
@@ -261,21 +269,18 @@ class _HomePageState extends State<HomePage> {
                             Text(
                               "Carrinho:",
                               style: TextStyle(
-                              fontSize: 18,
-                              backgroundColor: Color(0xFFF4B000),
+                                fontSize: 18,
+                                backgroundColor: Color(0xFFF4B000),
                               ),
                             ),
                           ],
                         ),
-                        //////
-
-
                         ...carrinho.asMap().entries.map((entry) {
                           final index = entry.key;
                           final item = entry.value;
                           return ListTile(
-                            title: Text("${item['produto']} - ${item['quantidade']}x R\$ ${item['preco']}"),
-                            subtitle: Text("Total: R\$ ${item['total'].toStringAsFixed(2)}"),
+                            title: Text("${item['produto']} - ${item['quantidade']}x ${item['preco']} XOF"),
+                            subtitle: Text("Total: ${item['total'].toStringAsFixed(2)}  XOF"),
                             trailing: IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
                               onPressed: () => _removerDoCarrinho(index),
@@ -287,10 +292,9 @@ class _HomePageState extends State<HomePage> {
                         ...produtos.map((p) => ListTile(title: Text(p['nome']), subtitle: Text("Qtd: ${p['quantidade']}"))),
                       ],
                     ),
-                    // Exibir total de vendas do dia apenas para admins
                     if (tipoUsuario == 'admin')
                       Center(
-                        child: Text("Total de vendas de hoje: R\$ ${totalVendasDia.toStringAsFixed(2)}", style: TextStyle(fontSize: 20)),
+                        child: Text("Total de vendas de hoje: XOF ${totalVendasDia.toStringAsFixed(2)}", style: TextStyle(fontSize: 20)),
                       )
                     else
                       Center(
