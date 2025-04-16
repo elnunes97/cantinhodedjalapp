@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AdicionarProdutoPage extends StatefulWidget {
   @override
@@ -6,114 +8,195 @@ class AdicionarProdutoPage extends StatefulWidget {
 }
 
 class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
-  final _nomeController = TextEditingController();
-  final _quantidadeController = TextEditingController();
-  final _precoController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _quantidadeController = TextEditingController();
+  final TextEditingController _precoController = TextEditingController();
 
-  List<Produto> _produtos = [];
+  bool _isLoading = false;
+  String? _mensagemSucesso;
+  String? _mensagemErro;
+  bool _mostrarMensagemSucesso = false;
+  bool _mostrarMensagemErro = false;
 
-  void _adicionarProdutoNaLista() {
-    final nome = _nomeController.text.trim();
-    final quantidade = int.tryParse(_quantidadeController.text) ?? 0;
-    final preco = double.tryParse(_precoController.text) ?? 0.0;
+  Future<void> _adicionarProduto() async {
+    if (!_formKey.currentState!.validate()) return;
 
-    if (nome.isEmpty || quantidade <= 0 || preco <= 0.0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Preencha os campos corretamente')),
-      );
-      return;
-    }
-
-    final novoProduto = Produto(nome: nome, quantidade: quantidade, preco: preco);
     setState(() {
-      _produtos.add(novoProduto);
-      _nomeController.clear();
-      _quantidadeController.clear();
-      _precoController.clear();
+      _isLoading = true;
+      _mensagemSucesso = null;
+      _mensagemErro = null;
+      _mostrarMensagemSucesso = false;
+      _mostrarMensagemErro = false;
     });
-  }
 
-  double get _totalGeral {
-    return _produtos.fold(0.0, (soma, p) => soma + p.subtotal);
-  }
+    final url = Uri.parse('http://localhost/adicionar_produto.php');
 
-  void _finalizarVenda() {
-    if (_produtos.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Nenhum produto adicionado')),
-      );
-      return;
-    }
-
-    // Aqui você pode enviar os produtos para o backend ou ir pra outra tela de recibo
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text("Venda Finalizada"),
-        content: Text("Total: R\$ ${_totalGeral.toStringAsFixed(2)}"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() => _produtos.clear());
-            },
-            child: Text("OK"),
-          ),
-        ],
-      ),
+    final response = await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "nome": _nomeController.text.trim(),
+        "quantidade": int.parse(_quantidadeController.text),
+        "preco": double.parse(_precoController.text.replaceAll(',', '.')),
+      }),
     );
+
+    setState(() => _isLoading = false);
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] == 'success') {
+      setState(() {
+        _mensagemSucesso = data['message'];
+        _mostrarMensagemSucesso = true;
+        _nomeController.clear();
+        _quantidadeController.clear();
+        _precoController.clear();
+      });
+
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() => _mostrarMensagemSucesso = false);
+      });
+    } else {
+      setState(() {
+        _mensagemErro = data['message'];
+        _mostrarMensagemErro = true;
+      });
+
+      Future.delayed(Duration(seconds: 3), () {
+        setState(() => _mostrarMensagemErro = false);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width > 600;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Nova Venda')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(controller: _nomeController, decoration: InputDecoration(labelText: 'Nome do Produto')),
-            TextField(controller: _quantidadeController, decoration: InputDecoration(labelText: 'Quantidade'), keyboardType: TextInputType.number),
-            TextField(controller: _precoController, decoration: InputDecoration(labelText: 'Preço'), keyboardType: TextInputType.number),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _adicionarProdutoNaLista,
-              child: Text("Adicionar à Lista"),
-            ),
-            Divider(height: 30),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _produtos.length,
-                itemBuilder: (_, index) {
-                  final p = _produtos[index];
-                  return ListTile(
-                    title: Text("${p.nome} (${p.quantidade}x)"),
-                    subtitle: Text("Preço: R\$ ${p.preco.toStringAsFixed(2)}"),
-                    trailing: Text("Subtotal: R\$ ${p.subtotal.toStringAsFixed(2)}"),
-                  );
-                },
+      appBar: AppBar(
+        title: Text("Adicionar Produto"),
+        backgroundColor: Color(0xFFF4B000),
+      ),
+      body: Center(
+        child: Container(
+          padding: EdgeInsets.all(20),
+          width: isTablet ? 500 : double.infinity,
+          child: Column(
+            children: [
+              // Mensagem Sucesso
+              AnimatedOpacity(
+                opacity: _mostrarMensagemSucesso ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 500),
+                child: _mensagemSucesso != null
+                    ? Container(
+                        width: double.infinity,
+                        margin: EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _mensagemSucesso!,
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SizedBox.shrink(),
               ),
-            ),
-            SizedBox(height: 10),
-            Text("Total: R\$ ${_totalGeral.toStringAsFixed(2)}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _finalizarVenda,
-              child: Text("Finalizar Venda"),
-            ),
-          ],
+
+              // Mensagem Erro
+              AnimatedOpacity(
+                opacity: _mostrarMensagemErro ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 500),
+                child: _mensagemErro != null
+                    ? Container(
+                        width: double.infinity,
+                        margin: EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.white),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _mensagemErro!,
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SizedBox.shrink(),
+              ),
+
+              Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _nomeController,
+                      decoration: InputDecoration(labelText: 'Nome do Produto'),
+                      validator: (value) =>
+                          value == null || value.isEmpty ? 'Campo obrigatório' : null,
+                    ),
+                    SizedBox(height: 12),
+                    TextFormField(
+                      controller: _quantidadeController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: 'Quantidade'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Campo obrigatório';
+                        final val = int.tryParse(value);
+                        if (val == null || val <= 0) return 'Quantidade inválida';
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 12),
+                    TextFormField(
+                      controller: _precoController,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(labelText: 'Preço'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Campo obrigatório';
+                        final val = double.tryParse(value.replaceAll(',', '.'));
+                        if (val == null || val <= 0) return 'Preço inválido';
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    _isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton.icon(
+                            onPressed: _adicionarProduto,
+                            icon: Icon(Icons.add),
+                            label: Text("Adicionar ao Estoque"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFF4B000),
+                              padding:
+                                  EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class Produto {
-  final String nome;
-  final int quantidade;
-  final double preco;
-
-  Produto({required this.nome, required this.quantidade, required this.preco});
-
-  double get subtotal => quantidade * preco;
 }
