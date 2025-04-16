@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lottie/lottie.dart';
+
 import 'LoginPage.dart';
 import 'ReciboPage.dart';
 import 'EstoquePage.dart';
@@ -40,14 +42,6 @@ class _HomePageState extends State<HomePage> {
       nomeUsuario = prefs.getString('nome') ?? 'Nome não disponível';
       emailUsuario = prefs.getString('email') ?? 'Email não disponível';
       tipoUsuario = prefs.getString('tipo') ?? 'usuario';
-    });
-  }
-
-  void _calcularTotal() {
-    double preco = double.tryParse(_precoController.text) ?? 0.0;
-    int quantidade = int.tryParse(_quantidadeController.text) ?? 0;
-    setState(() {
-      totalVenda = preco * quantidade;
     });
   }
 
@@ -137,8 +131,8 @@ class _HomePageState extends State<HomePage> {
     await _atualizarEstoque();
 
     final total = carrinho.fold(0.0, (sum, item) => sum + item['total']);
-
     final copiaCarrinho = List<Map<String, dynamic>>.from(carrinho);
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -173,14 +167,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
     );
   }
 
-  // ✅ Atualizada para recarregar o estoque ao voltar da página EstoquePage
   void _abrirPaginaEstoque() async {
     await Navigator.push(
       context,
@@ -195,7 +187,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Color(0xFFF4B000),
         centerTitle: true,
-        title: Text("Sistema de Vendas", style: TextStyle(color: Colors.white)),
+        title: Text("Sistema de Vendas", style: TextStyle(color: Colors.white, fontSize: 20)),
         actions: [
           IconButton(
             icon: Icon(Icons.inventory, color: Colors.white),
@@ -203,7 +195,7 @@ class _HomePageState extends State<HomePage> {
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: Image.asset('assets/logo.png', height: 60),
+            child: Image.asset('assets/logo.png', height: 40),
           ),
         ],
       ),
@@ -215,14 +207,18 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(radius: 40, backgroundColor: Colors.white, child: Icon(Icons.person, size: 40, color: Colors.blue)),
+                  CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.person, size: 40, color: Colors.blue)),
                   SizedBox(height: 10),
                   Text(nomeUsuario, style: TextStyle(color: Colors.white, fontSize: 18)),
-                  Text(emailUsuario, style: TextStyle(color: Colors.white, fontSize: 12)),
+                  Text(emailUsuario, style: TextStyle(color: Colors.white70, fontSize: 13)),
                 ],
               ),
             ),
-            ListTile(leading: Icon(Icons.exit_to_app), title: Text('Sair'), onTap: _logout),
+            ListTile(
+              leading: Icon(Icons.exit_to_app),
+              title: Text('Sair'),
+              onTap: _logout,
+            ),
           ],
         ),
       ),
@@ -233,76 +229,106 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             children: [
               if (_mensagemErro != null)
-                Container(
-                  color: Colors.red,
-                  padding: EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error, color: Colors.white),
-                      SizedBox(width: 10),
-                      Expanded(child: Text(_mensagemErro!, style: TextStyle(color: Colors.white))),
-                    ],
+                Card(
+                  color: Colors.red.shade400,
+                  child: ListTile(
+                    leading: Lottie.asset('assets/error.json', width: 40),
+                    title: Text(_mensagemErro!, style: TextStyle(color: Colors.white)),
                   ),
                 ),
               TabBar(
+                labelColor: Colors.black,
+                indicatorColor: Color(0xFFF4B000),
                 tabs: [
                   Tab(text: "Vendas"),
-                  if (tipoUsuario == 'admin') Tab(text: "Total de Vendas do Dia"),
+                  Tab(text: "Total do Dia"),
                 ],
               ),
               Expanded(
                 child: TabBarView(
                   children: [
-                    ListView(
-                      children: [
-                        TextField(controller: _produtoController, decoration: InputDecoration(labelText: 'Produto')),
-                        TextField(controller: _quantidadeController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Quantidade')),
-                        TextField(controller: _precoController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Preço')),
-                        SizedBox(height: 10),
-                        Text("Subtotal: ${totalVenda.toStringAsFixed(2)} XOF"),
-                        SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(child: ElevatedButton(onPressed: _adicionarAoCarrinho, child: Text("Adicionar ao Carrinho"))),
-                            SizedBox(width: 10),
-                            Expanded(child: ElevatedButton(onPressed: _isLoading ? null : _registrarVenda, child: _isLoading ? CircularProgressIndicator() : Text("Finalizar Venda"))),
-                          ],
-                        ),
-                        Divider(height: 30),
-                        Row(
-                          children: [
-                            Icon(Icons.shopping_cart, color: Colors.black),
-                            SizedBox(width: 8),
-                            Text("Carrinho:", style: TextStyle(fontSize: 18, backgroundColor: Color(0xFFF4B000))),
-                          ],
-                        ),
-                        ...carrinho.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final item = entry.value;
-                          return ListTile(
-                            title: Text("${item['produto']} - ${item['quantidade']}x ${item['preco']} XOF"),
-                            subtitle: Text("Total: ${item['total'].toStringAsFixed(2)}  XOF"),
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _removerDoCarrinho(index),
+                    SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          Card(
+                            elevation: 2,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                children: [
+                                  _inputField("Produto", _produtoController),
+                                  _inputField("Quantidade", _quantidadeController, isNumber: true),
+                                  _inputField("Preço", _precoController, isNumber: true),
+                                  SizedBox(height: 10),
+                                  Text("Subtotal: ${totalVenda.toStringAsFixed(2)} XOF", style: TextStyle(fontSize: 16)),
+                                  SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Expanded(child: ElevatedButton.icon(onPressed: _adicionarAoCarrinho, icon: Icon(Icons.add_shopping_cart), label: Text("Adicionar"))),
+                                      SizedBox(width: 10),
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: _isLoading ? null : _registrarVenda,
+                                          icon: Icon(Icons.check_circle),
+                                          label: _isLoading
+                                              ? Lottie.asset('assets/loading.json', width: 40)
+                                              : Text("Finalizar"),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        }).toList(),
-                      ],
-                    ),
-                    if (tipoUsuario == 'admin')
-                      Center(
-                        child: Text("Total de vendas de hoje: XOF ${totalVendasDia.toStringAsFixed(2)}", style: TextStyle(fontSize: 20)),
-                      )
-                    else
-                      Center(
-                        child: Text("Acesso restrito. Apenas administradores podem ver as vendas do dia.", style: TextStyle(fontSize: 20, color: Colors.red)),
+                          ),
+                          SizedBox(height: 10),
+                          Text("Carrinho", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          ...carrinho.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            return Card(
+                              child: ListTile(
+                                leading: Icon(Icons.shopping_bag),
+                                title: Text("${item['produto']} - ${item['quantidade']} x ${item['preco']}"),
+                                subtitle: Text("Total: ${item['total'].toStringAsFixed(2)} XOF"),
+                                trailing: IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _removerDoCarrinho(index),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
                       ),
+                    ),
+                    Center(
+                      child: Text(
+                        "Total de vendas de hoje:\nXOF ${totalVendasDia.toStringAsFixed(2)}",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                    )
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _inputField(String label, TextEditingController controller, {bool isNumber = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TextField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
     );
