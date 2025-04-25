@@ -7,6 +7,7 @@ import 'package:lottie/lottie.dart';
 import 'LoginPage.dart';
 import 'ReciboPage.dart';
 import 'EstoquePage.dart';
+import 'RegisterPage.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -28,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   String emailUsuario = '';
   String? _mensagemErro;
   String tipoUsuario = '';
+  int idUsuario = 0;
 
   @override
   void initState() {
@@ -42,6 +44,8 @@ class _HomePageState extends State<HomePage> {
       nomeUsuario = prefs.getString('nome') ?? 'Nome não disponível';
       emailUsuario = prefs.getString('email') ?? 'Email não disponível';
       tipoUsuario = prefs.getString('tipo') ?? 'usuario';
+      idUsuario = prefs.getInt('id') ?? 0;
+      
     });
   }
 
@@ -71,8 +75,13 @@ class _HomePageState extends State<HomePage> {
       orElse: () => {},
     );
 
-    if (produtoEstoque.isEmpty || quantidade > (int.tryParse(produtoEstoque['quantidade'].toString()) ?? 0)) {
-      _mostrarErro("Produto não disponível ou estoque insuficiente.");
+    if (produtoEstoque.isEmpty) {
+      _mostrarErro("Produto não disponível.");
+      return;
+    }
+
+    if (quantidade > (int.tryParse(produtoEstoque['quantidade'].toString()) ?? 0)) {
+      _mostrarErro("Estoque insuficiente para o produto.");
       return;
     }
 
@@ -97,58 +106,63 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _registrarVenda() async {
-    if (carrinho.isEmpty) {
-      _mostrarErro("O carrinho está vazio.");
+  if (carrinho.isEmpty) {
+    _mostrarErro("O carrinho está vazio.");
+    return;
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  final prefs = await SharedPreferences.getInstance();
+  final usuarioId = prefs.getInt('id');
+
+  for (var item in carrinho) {
+    final response = await http.post(
+      Uri.parse('http://localhost/vender.php'),
+      body: {
+        'produto': item['produto'],
+        'quantidade': item['quantidade'].toString(),
+        'preco': item['preco'].toString(),
+        'usuario_id': usuarioId.toString(),
+      },
+    );
+
+    final data = json.decode(response.body);
+    if (data['status'] != 'success') {
+      setState(() {
+        _isLoading = false;
+      });
+      _mostrarErro("Erro ao registrar venda de ${item['produto']}.");
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
-
-    for (var item in carrinho) {
-      final response = await http.post(
-        Uri.parse('http://localhost/vender.php'),
-        body: {
-          'produto': item['produto'],
-          'quantidade': item['quantidade'].toString(),
-          'preco': item['preco'].toString(),
-        },
-      );
-
-      final data = json.decode(response.body);
-      if (data['status'] != 'success') {
-        setState(() {
-          _isLoading = false;
-        });
-        _mostrarErro("Erro ao registrar venda de ${item['produto']}.");
-        return;
-      }
-
-      _registrarVendasDia(item['total']);
-    }
-
-    await _atualizarEstoque();
-
-    final total = carrinho.fold(0.0, (sum, item) => sum + item['total']);
-    final copiaCarrinho = List<Map<String, dynamic>>.from(carrinho);
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ReciboPage(
-          itens: copiaCarrinho,
-          total: total,
-          nomeUsuario: nomeUsuario,
-        ),
-      ),
-    );
-
-    setState(() {
-      carrinho.clear();
-      _isLoading = false;
-    });
+    _registrarVendasDia(item['total']);
   }
+
+  await _atualizarEstoque();
+
+  final total = carrinho.fold(0.0, (sum, item) => sum + item['total']);
+  final copiaCarrinho = List<Map<String, dynamic>>.from(carrinho);
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ReciboPage(
+        itens: copiaCarrinho,
+        total: total,
+        nomeUsuario: nomeUsuario,
+      ),
+    ),
+  );
+
+  setState(() {
+    carrinho.clear();
+    _isLoading = false;
+  });
+}
+
 
   Future<void> _registrarVendasDia(double venda) async {
     setState(() {
@@ -184,20 +198,30 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         backgroundColor: Color(0xFFF4B000),
         centerTitle: true,
         title: Text("Sistema de Vendas", style: TextStyle(color: Colors.white, fontSize: 20)),
         actions: [
-          IconButton(
-            icon: Icon(Icons.inventory, color: Colors.white),
-            onPressed: _abrirPaginaEstoque,
-          ),
+          ///stoque de produtos no appBar
+          //IconButton(
+           // icon: Icon(Icons.inventory, color: Colors.white),
+            //onPressed: _abrirPaginaEstoque,
+          //),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: Image.asset('assets/logo.png', height: 40),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/logo.png',
+                  height: 40,
+                  width: 40,
+                  fit: BoxFit.cover,
+              ),
+            ),
           ),
         ],
+        
       ),
       drawer: Drawer(
         child: ListView(
@@ -218,6 +242,35 @@ class _HomePageState extends State<HomePage> {
               leading: Icon(Icons.exit_to_app),
               title: Text('Sair'),
               onTap: _logout,
+            ),
+            // Novo botão com ícone de Relatório de Vendas
+            if (tipoUsuario == 'admin')
+            ListTile(
+              leading: Icon(Icons.report), // Ícone de adicionar user
+              title: Text('Relatório de Vendas'),
+              onTap: () {
+                Navigator.pushNamed(context, '/relatorioVendas');
+              },
+            ),
+            ///estoque
+            //if (tipoUsuario == 'admin')
+            ListTile(
+              leading: Icon(Icons.inventory), // Ícone de estoque
+              title: Text('Ver estoque'),
+              onTap: _abrirPaginaEstoque,
+            ),
+            //registro de usuário
+
+            //if (tipoUsuario == 'admin')
+            ListTile(
+              leading: Icon(Icons.person_add),
+              title: Text('Adicionar usuario'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                    MaterialPageRoute(builder: (context) => RegisterPage()),
+                );
+              },
             ),
           ],
         ),
@@ -250,43 +303,20 @@ class _HomePageState extends State<HomePage> {
                     SingleChildScrollView(
                       child: Column(
                         children: [
-                          Card(
-                            elevation: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                children: [
-                                  _inputField("Produto", _produtoController),
-                                  _inputField("Quantidade", _quantidadeController, isNumber: true),
-                                  _inputField("Preço", _precoController, isNumber: true),
-                                  SizedBox(height: 10),
-                                  Text("Subtotal: ${totalVenda.toStringAsFixed(2)} XOF", style: TextStyle(fontSize: 16)),
-                                  SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      Expanded(child: ElevatedButton.icon(onPressed: _adicionarAoCarrinho, icon: Icon(Icons.add_shopping_cart), label: Text("Adicionar"))),
-                                      SizedBox(width: 10),
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: _isLoading ? null : _registrarVenda,
-                                          icon: Icon(Icons.check_circle),
-                                          label: _isLoading
-                                              ? Lottie.asset('assets/loading.json', width: 40)
-                                              : Text("Finalizar"),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          _cardFormulario(),
                           SizedBox(height: 10),
-                          Text("Carrinho", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          //Text("Carrinho", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Lottie.asset(
+                           'assets/carrinho.json',
+                            width: 40,
+                            height: 40,
+                            repeat: true,
+                          ),
                           ...carrinho.asMap().entries.map((entry) {
                             final index = entry.key;
                             final item = entry.value;
                             return Card(
+                              margin: EdgeInsets.symmetric(vertical: 5),
                               child: ListTile(
                                 leading: Icon(Icons.shopping_bag),
                                 title: Text("${item['produto']} - ${item['quantidade']} x ${item['preco']}"),
@@ -302,11 +332,24 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Center(
-                      child: Text(
-                        "Total de vendas de hoje:\nXOF ${totalVendasDia.toStringAsFixed(2)}",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                      ),
+                        child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.attach_money, size: 80, color: Colors.green),
+                          SizedBox(height: 20),
+                          Text(
+                          "Total de vendas de hoje",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black54),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                          "XOF ${totalVendasDia.toStringAsFixed(2)}",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                        ],
+                        ),
                     )
                   ],
                 ),
@@ -318,16 +361,59 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _cardFormulario() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _inputField("Produto", _produtoController),
+            _inputField("Quantidade", _quantidadeController, isNumber: true),
+            _inputField("Preço", _precoController, isNumber: true),
+            SizedBox(height: 10),
+            Text("Subtotal: ${totalVenda.toStringAsFixed(2)} XOF", style: TextStyle(fontSize: 16)),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _adicionarAoCarrinho,
+                    icon: Icon(Icons.add_shopping_cart),
+                    label: Text("Adicionar"),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _registrarVenda,
+                    icon: _isLoading
+                        ? Lottie.asset('assets/loading.json', width: 40)
+                        : Icon(Icons.check_circle),
+                    label: Text("Finalizar"),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _inputField(String label, TextEditingController controller, {bool isNumber = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
           filled: true,
-          fillColor: Colors.grey.shade100,
+          fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),

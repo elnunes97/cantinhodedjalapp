@@ -20,7 +20,7 @@ class _VendasDoDiaPageState extends State<VendasDoDiaPage> {
 
   Future<void> _carregarVendasPorDia() async {
     final response = await http.get(Uri.parse(
-      'https://localhost/vendas_por_dia.php'
+      'http://localhost/vendas_por_dia.php'
     ));
 
     if (response.statusCode == 200) {

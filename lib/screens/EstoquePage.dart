@@ -53,9 +53,11 @@ class _EstoquePageState extends State<EstoquePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text('Estoque'),
         backgroundColor: Color(0xFFF4B000),
+        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -64,33 +66,64 @@ class _EstoquePageState extends State<EstoquePage> {
             child: TextField(
               controller: _buscaController,
               decoration: InputDecoration(
-                labelText: 'Buscar produto...',
+                labelText: 'Buscar produto...'
+                    ,
                 prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: produtosFiltrados.length,
-              itemBuilder: (_, index) {
-                final p = produtosFiltrados[index];
-                return ListTile(
-                  title: Text(
-                    p['nome'],
-                    style: TextStyle(fontWeight: FontWeight.bold),
+            child: produtosFiltrados.isEmpty
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                    SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF4B000)),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text('Nenhum produto encontrado'),
+                    ],
                   ),
-                  subtitle: Text('Qtd: ${p['quantidade']}'),
-                );
-              },
-            ),
+                  )
+                : ListView.builder(
+                    itemCount: produtosFiltrados.length,
+                    itemBuilder: (_, index) {
+                      final p = produtosFiltrados[index];
+                      return Card(
+                        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 3,
+                        child: ListTile(
+                          leading: Icon(Icons.inventory, color: Color(0xFFF4B000)),
+                          title: Text(
+                            p['nome'],
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('Quantidade disponível: ${p['quantidade']}'),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
       floatingActionButton: widget.tipoUsuario == 'admin'
           ? FloatingActionButton(
               onPressed: () async {
-                // Aguarda a página de adicionar produto e recarrega o estoque ao voltar
                 await Navigator.pushNamed(context, '/adicionarProduto');
                 await _carregarProdutos();
               },
