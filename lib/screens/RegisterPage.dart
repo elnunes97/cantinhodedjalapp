@@ -62,19 +62,25 @@ class _RegisterPageState extends State<RegisterPage> {
       appBar: AppBar(
         backgroundColor: Color(0xFFF4B000),
         centerTitle: true,
-        title: Text("Registrar", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text(
+          "Registrar",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(20),
         child: Column(
           children: [
-            // Lottie padrão topo
-            //Lottie.asset('assets/register.json', height: screenHeight * 0.3),
-            //Image.asset(
-            //          'assets/logo.png',
-             //         height: MediaQuery.of(context).size.width > 600 ? 200 : 150,
-            //        ),
+            // Logo no topo
+            Image.asset(
+              'assets/logo.png',
+              height: screenHeight * 0.2,
+            ),
 
             // Animação de feedback
             if (_mostrarAnimacao)
@@ -90,52 +96,107 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: TextStyle(
                       color: _sucesso ? Colors.green : Colors.red,
                       fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
                   SizedBox(height: 20),
                 ],
               ),
 
+            // Campo de Nome
             TextField(
               controller: _nomeController,
               decoration: InputDecoration(
                 labelText: "Nome",
-                prefixIcon: Icon(Icons.person),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: Icon(Icons.person, color: Color(0xFFF4B000)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFFF4B000)),
+                ),
               ),
             ),
             SizedBox(height: 15),
+
+            // Campo de Email
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
                 labelText: "Email",
-                prefixIcon: Icon(Icons.email),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: Icon(Icons.email, color: Color(0xFFF4B000)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFFF4B000)),
+                ),
               ),
               keyboardType: TextInputType.emailAddress,
             ),
             SizedBox(height: 15),
+
+            // Campo de Senha
             TextField(
               controller: _senhaController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: "Senha",
-                prefixIcon: Icon(Icons.lock),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: Icon(Icons.lock, color: Color(0xFFF4B000)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFFF4B000)),
+                ),
               ),
             ),
             SizedBox(height: 15),
+
+            // Dropdown de Tipo de Usuário
             DropdownButtonFormField<String>(
               value: _tipoSelecionado,
               decoration: InputDecoration(
                 labelText: "Tipo de usuário",
-                prefixIcon: Icon(Icons.admin_panel_settings),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                prefixIcon: Icon(Icons.admin_panel_settings, color: Color(0xFFF4B000)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFFF4B000)),
+                ),
               ),
               items: ['admin', 'usuario'].map((tipo) {
                 return DropdownMenuItem<String>(
                   value: tipo,
-                  child: Text(tipo[0].toUpperCase() + tipo.substring(1)),
+                  child: Text(
+                    tipo[0].toUpperCase() + tipo.substring(1),
+                    style: TextStyle(fontSize: 16),
+                  ),
                 );
               }).toList(),
               onChanged: (valor) {
@@ -145,10 +206,19 @@ class _RegisterPageState extends State<RegisterPage> {
               },
             ),
             SizedBox(height: 25),
+
+            // Botão de Registro
             ElevatedButton.icon(
               onPressed: _register,
               icon: Icon(Icons.check, color: Colors.black),
-              label: Text("Registrar", style: TextStyle(color: Colors.black)),
+              label: Text(
+                "Registrar",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFF4B000),
                 minimumSize: Size(double.infinity, 50),

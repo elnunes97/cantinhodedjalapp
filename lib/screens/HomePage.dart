@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lottie/lottie.dart';
-
 import 'LoginPage.dart';
 import 'ReciboPage.dart';
 import 'EstoquePage.dart';
@@ -18,12 +17,10 @@ class _HomePageState extends State<HomePage> {
   final _produtoController = TextEditingController();
   final _quantidadeController = TextEditingController();
   final _precoController = TextEditingController();
-
   double totalVenda = 0.0;
   double totalVendasDia = 0.0;
   List<Map<String, dynamic>> produtos = [];
   List<Map<String, dynamic>> carrinho = [];
-
   bool _isLoading = false;
   String nomeUsuario = '';
   String emailUsuario = '';
@@ -36,7 +33,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _getUserData();
     _atualizarEstoque();
-    
   }
 
   Future<void> _getUserData() async {
@@ -46,7 +42,6 @@ class _HomePageState extends State<HomePage> {
       emailUsuario = prefs.getString('email') ?? 'Email não disponível';
       tipoUsuario = prefs.getString('tipo') ?? 'usuario';
       idUsuario = prefs.getInt('id') ?? 0;
-      
     });
   }
 
@@ -59,6 +54,37 @@ class _HomePageState extends State<HomePage> {
         _mensagemErro = null;
       });
     });
+  }
+
+  /// Função para buscar o preço do produto pelo nome
+  Future<void> _buscarPreco(String nomeProduto) async {
+    if (nomeProduto.isEmpty) {
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost/buscar_produto.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({"nome": nomeProduto}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'success') {
+          final preco = data['preco'].toString();
+          setState(() {
+            _precoController.text = preco; // Preenche o campo de preço
+          });
+        } else if (data['status'] == 'not_found') {
+          _mostrarErro("Produto não encontrado.");
+        }
+      } else {
+        _mostrarErro("Erro ao buscar preço do produto.");
+      }
+    } catch (e) {
+      _mostrarErro("Erro na comunicação com o servidor.");
+    }
   }
 
   void _adicionarAoCarrinho() {
@@ -107,63 +133,60 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _registrarVenda() async {
-  if (carrinho.isEmpty) {
-    _mostrarErro("O carrinho está vazio.");
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  final prefs = await SharedPreferences.getInstance();
-  final usuarioId = prefs.getInt('id');
-
-  for (var item in carrinho) {
-    final response = await http.post(
-      Uri.parse('http://localhost/vender.php'),
-      body: {
-        'produto': item['produto'],
-        'quantidade': item['quantidade'].toString(),
-        'preco': item['preco'].toString(),
-        'usuario_id': usuarioId.toString(),
-      },
-    );
-
-    final data = json.decode(response.body);
-    if (data['status'] != 'success') {
-      setState(() {
-        _isLoading = false;
-      });
-      _mostrarErro("Erro ao registrar venda de ${item['produto']}.");
+    if (carrinho.isEmpty) {
+      _mostrarErro("O carrinho está vazio.");
       return;
     }
 
-    _registrarVendasDia(item['total']);
-  }
+    setState(() {
+      _isLoading = true;
+    });
 
-  await _atualizarEstoque();
+    final prefs = await SharedPreferences.getInstance();
+    final usuarioId = prefs.getInt('id');
 
-  final total = carrinho.fold(0.0, (sum, item) => sum + item['total']);
-  final copiaCarrinho = List<Map<String, dynamic>>.from(carrinho);
+    for (var item in carrinho) {
+      final response = await http.post(
+        Uri.parse('http://localhost/vender.php'),
+        body: {
+          'produto': item['produto'],
+          'quantidade': item['quantidade'].toString(),
+          'preco': item['preco'].toString(),
+          'usuario_id': usuarioId.toString(),
+        },
+      );
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => ReciboPage(
-        itens: copiaCarrinho,
-        total: total,
-        nomeUsuario: nomeUsuario,
+      final data = json.decode(response.body);
+      if (data['status'] != 'success') {
+        setState(() {
+          _isLoading = false;
+        });
+        _mostrarErro("Erro ao registrar venda de ${item['produto']}.");
+        return;
+      }
+      _registrarVendasDia(item['total']);
+    }
+
+    await _atualizarEstoque();
+    final total = carrinho.fold(0.0, (sum, item) => sum + item['total']);
+    final copiaCarrinho = List<Map<String, dynamic>>.from(carrinho);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReciboPage(
+          itens: copiaCarrinho,
+          total: total,
+          nomeUsuario: nomeUsuario,
+        ),
       ),
-    ),
-  );
+    );
 
-  setState(() {
-    carrinho.clear();
-    _isLoading = false;
-  });
-}
-
+    setState(() {
+      carrinho.clear();
+      _isLoading = false;
+    });
+  }
 
   Future<void> _registrarVendasDia(double venda) async {
     setState(() {
@@ -205,24 +228,18 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         title: Text("Sistema de Vendas", style: TextStyle(color: Colors.white, fontSize: 20)),
         actions: [
-          ///stoque de produtos no appBar
-          //IconButton(
-           // icon: Icon(Icons.inventory, color: Colors.white),
-            //onPressed: _abrirPaginaEstoque,
-          //),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: ClipOval(
               child: Image.asset(
                 'assets/logo.png',
-                  height: 40,
-                  width: 40,
-                  fit: BoxFit.cover,
+                height: 40,
+                width: 40,
+                fit: BoxFit.cover,
               ),
             ),
           ),
         ],
-        
       ),
       drawer: Drawer(
         child: ListView(
@@ -232,10 +249,20 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(radius: 30, backgroundColor: Colors.white, child: Icon(Icons.person, size: 40, color: Colors.blue)),
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, size: 40, color: Colors.blue),
+                  ),
                   SizedBox(height: 10),
-                  Text(nomeUsuario, style: TextStyle(color: Colors.white, fontSize: 18)),
-                  Text(emailUsuario, style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text(
+                    nomeUsuario,
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                  Text(
+                    emailUsuario,
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -244,35 +271,30 @@ class _HomePageState extends State<HomePage> {
               title: Text('Sair'),
               onTap: _logout,
             ),
-            // Novo botão com ícone de Relatório de Vendas
             if (tipoUsuario == 'admin')
+              ListTile(
+                leading: Icon(Icons.report),
+                title: Text('Relatório de Vendas'),
+                onTap: () {
+                  Navigator.pushNamed(context, '/relatorioVendas');
+                },
+              ),
             ListTile(
-              leading: Icon(Icons.report), // Ícone de adicionar user
-              title: Text('Relatório de Vendas'),
-              onTap: () {
-                Navigator.pushNamed(context, '/relatorioVendas');
-              },
-            ),
-            ///estoque
-            //if (tipoUsuario == 'admin')
-            ListTile(
-              leading: Icon(Icons.inventory), // Ícone de estoque
+              leading: Icon(Icons.inventory),
               title: Text('Ver estoque'),
               onTap: _abrirPaginaEstoque,
             ),
-            //registro de usuário
-
-            //if (tipoUsuario == 'admin')
-            ListTile(
-              leading: Icon(Icons.person_add),
-              title: Text('Adicionar usuario'),
-              onTap: () {
-                Navigator.push(
-                  context,
+            if (tipoUsuario == 'admin')
+              ListTile(
+                leading: Icon(Icons.person_add),
+                title: Text('Adicionar usuario'),
+                onTap: () {
+                  Navigator.push(
+                    context,
                     MaterialPageRoute(builder: (context) => RegisterPage()),
-                );
-              },
-            ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -287,7 +309,10 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.red.shade400,
                   child: ListTile(
                     leading: Lottie.asset('assets/error.json', width: 40),
-                    title: Text(_mensagemErro!, style: TextStyle(color: Colors.white)),
+                    title: Text(
+                      _mensagemErro!,
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               TabBar(
@@ -306,9 +331,8 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           _cardFormulario(),
                           SizedBox(height: 10),
-                          //Text("Carrinho", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                           Lottie.asset(
-                           'assets/carrinho.json',
+                            'assets/carrinho.json',
                             width: 40,
                             height: 40,
                             repeat: true,
@@ -333,24 +357,24 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Center(
-                        child: Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.attach_money, size: 80, color: Colors.green),
                           SizedBox(height: 20),
                           Text(
-                          "Total de vendas de hoje",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black54),
+                            "Total de vendas de hoje",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black54),
                           ),
                           SizedBox(height: 10),
                           Text(
-                          "XOF ${totalVendasDia.toStringAsFixed(2)}",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
+                            "XOF ${totalVendasDia.toStringAsFixed(2)}",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.green),
                           ),
                         ],
-                        ),
+                      ),
                     )
                   ],
                 ),
@@ -370,9 +394,9 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _inputField("Produto", _produtoController),
+            _inputFieldProduto(),
             _inputField("Quantidade", _quantidadeController, isNumber: true),
-            _inputField("Preço", _precoController, isNumber: true),
+            _inputField("Preço", _precoController, isNumber: true, readOnly: true), // Preço somente leitura
             SizedBox(height: 10),
             Text("Subtotal: ${totalVenda.toStringAsFixed(2)} XOF", style: TextStyle(fontSize: 16)),
             SizedBox(height: 10),
@@ -405,7 +429,33 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _inputField(String label, TextEditingController controller, {bool isNumber = false}) {
+  /// Campo de entrada para o nome do produto
+  Widget _inputFieldProduto() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextField(
+        controller: _produtoController,
+        keyboardType: TextInputType.text,
+        decoration: InputDecoration(
+          labelText: "Produto",
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        onChanged: (value) {
+          // Chama a função para buscar o preço após o usuário parar de digitar
+          Future.delayed(Duration(milliseconds: 500), () {
+            if (_produtoController.text.trim().toLowerCase() == value.trim().toLowerCase()) {
+              _buscarPreco(value.trim());
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  /// Campo de entrada genérico
+  Widget _inputField(String label, TextEditingController controller, {bool isNumber = false, bool readOnly = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: TextField(
@@ -417,6 +467,7 @@ class _HomePageState extends State<HomePage> {
           fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
+        readOnly: readOnly, // Adiciona a propriedade readOnly
       ),
     );
   }

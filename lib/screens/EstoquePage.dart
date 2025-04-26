@@ -4,6 +4,7 @@ import 'dart:convert';
 
 class EstoquePage extends StatefulWidget {
   final String tipoUsuario;
+
   const EstoquePage({Key? key, required this.tipoUsuario}) : super(key: key);
 
   @override
@@ -55,20 +56,26 @@ class _EstoquePageState extends State<EstoquePage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Estoque'),
+        title: Text(
+          'Estoque',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
         backgroundColor: Color(0xFFF4B000),
         centerTitle: true,
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _buscaController,
               decoration: InputDecoration(
-                labelText: 'Buscar produto...'
-                    ,
-                prefixIcon: Icon(Icons.search),
+                labelText: 'Buscar produto...',
+                prefixIcon: Icon(Icons.search, color: Color(0xFFF4B000)),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -82,38 +89,54 @@ class _EstoquePageState extends State<EstoquePage> {
           Expanded(
             child: produtosFiltrados.isEmpty
                 ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                    SizedBox(
-                      width: 100,
-                      height: 100,
-                      child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF4B000)),
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF4B000)),
+                        ),
+                        SizedBox(height: 20),
+                        Text(
+                          'Nenhum produto encontrado',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 20),
-                    Text('Nenhum produto encontrado'),
-                    ],
-                  ),
                   )
                 : ListView.builder(
                     itemCount: produtosFiltrados.length,
                     itemBuilder: (_, index) {
                       final p = produtosFiltrados[index];
                       return Card(
-                        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 3,
+                        elevation: 4,
                         child: ListTile(
-                          leading: Icon(Icons.inventory, color: Color(0xFFF4B000)),
+                          leading: Icon(Icons.inventory, color: Color(0xFFF4B000), size: 30),
                           title: Text(
                             p['nome'],
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
-                          subtitle: Text('Quantidade disponível: ${p['quantidade']}'),
+                          subtitle: Text(
+                            'Quantidade disponível: ${p['quantidade']}',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
+                            ),
+                          ),
+                          trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey.shade500),
+                          onTap: () {
+                            // Navegar para detalhes do produto (opcional)
+                          },
                         ),
                       );
                     },
@@ -127,7 +150,7 @@ class _EstoquePageState extends State<EstoquePage> {
                 await Navigator.pushNamed(context, '/adicionarProduto');
                 await _carregarProdutos();
               },
-              child: Icon(Icons.add),
+              child: Icon(Icons.add, color: Colors.black),
               backgroundColor: Color(0xFFF4B000),
             )
           : null,

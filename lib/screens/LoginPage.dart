@@ -43,7 +43,6 @@ class _LoginPageState extends State<LoginPage> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         prefs.setBool('isLoggedIn', true);
         prefs.setInt('id', data['user']['id']); // <-- salva o ID do usuário
-
         prefs.setString('nome', data['user']['nome']);
         prefs.setString('email', data['user']['email']);
         prefs.setString('tipo', data['user']['tipo']); // <- Aqui salvamos o tipo
@@ -64,7 +63,12 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showMessage(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
   }
 
@@ -79,6 +83,7 @@ class _LoginPageState extends State<LoginPage> {
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
+            fontSize: 22,
           ),
         ),
       ),
@@ -91,7 +96,18 @@ class _LoginPageState extends State<LoginPage> {
             child: SingleChildScrollView(
               child: Container(
                 width: isWideScreen ? 400 : double.infinity,
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.shade300,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -103,52 +119,81 @@ class _LoginPageState extends State<LoginPage> {
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(
-                      labelText: "Email",
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                        labelText: "Email",
+                        prefixIcon: Icon(Icons.email, color: Color(0xFFF4B000)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Color(0xFFF4B000)),
+                        ),
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
-                    SizedBox(height: 20), // Espaço entre os inputs
+                    SizedBox(height: 20),
                     TextField(
                       controller: _senhaController,
                       decoration: InputDecoration(
-                      labelText: "Senha",
-                      prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                        labelText: "Senha",
+                        prefixIcon: Icon(Icons.lock, color: Color(0xFFF4B000)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Color(0xFFF4B000)),
+                        ),
                       ),
                       obscureText: true,
                     ),
                     SizedBox(height: 20),
                     _isLoading
-                        ? CircularProgressIndicator()
+                        ? CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF4B000)),
+                          )
                         : ElevatedButton(
                             onPressed: _login,
-                            child: Text(
-                              "Login",
-                              style: TextStyle(
-                                color: Colors.black,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFF4B000),
+                              foregroundColor: Colors.black,
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
+                            child: Text(
+                              "Login",
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                  //  TextButton(
-                  //    onPressed: () {
-                  //      Navigator.push(
-                  //        context,
-                  //        MaterialPageRoute(builder: (context) => RegisterPage()),
-                  //      );
-                  //    },
-                  //    child: Text(
-                  //      "Ainda não tem uma conta? Registre-se",
-                  //      style: TextStyle(
-                  //        color: Color(0xFFF4B000),
-                  //      ),
-                  //    ),
-                  //  ),
+                    //SizedBox(height: 10),
+                   // TextButton(
+                   //   onPressed: () {
+                   //     Navigator.push(
+                   //       context,
+                   //       MaterialPageRoute(builder: (context) => RegisterPage()),
+                   //     );
+                   //   },
+                    //  child: Text(
+                     //   "Ainda não tem uma conta? Registre-se",
+                     //   style: TextStyle(
+                     //     color: Color(0xFFF4B000),
+                     //     fontSize: 16,
+                      //    fontWeight: FontWeight.w500,
+                      //  ),
+                    //  ),
+                   // ),
                   ],
                 ),
               ),

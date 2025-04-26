@@ -158,7 +158,7 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
                       keyboardType: TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: _precoSomenteLeitura
-                            ? 'Preço (preenchido automaticamente)'
+                            ? 'Preço'
                             : 'Preço',
                       ),
                       validator: (value) {
