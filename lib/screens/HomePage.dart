@@ -36,6 +36,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _getUserData();
     _atualizarEstoque();
+    
   }
 
   Future<void> _getUserData() async {

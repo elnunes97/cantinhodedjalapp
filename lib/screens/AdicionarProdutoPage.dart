@@ -14,10 +14,36 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
   final TextEditingController _precoController = TextEditingController();
 
   bool _isLoading = false;
+  bool _precoSomenteLeitura = false;
   String? _mensagemSucesso;
   String? _mensagemErro;
   bool _mostrarMensagemSucesso = false;
   bool _mostrarMensagemErro = false;
+
+  Future<void> _buscarPrecoProduto(String nome) async {
+    if (nome.trim().isEmpty) return;
+
+    final url = Uri.parse('http://localhost/buscar_produto.php');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'nome': nome}),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] == 'success') {
+      setState(() {
+        _precoController.text = data['preco'].toString();
+        _precoSomenteLeitura = true;
+      });
+    } else {
+      setState(() {
+        _precoController.clear();
+        _precoSomenteLeitura = false;
+      });
+    }
+  }
 
   Future<void> _adicionarProduto() async {
     if (!_formKey.currentState!.validate()) return;
@@ -31,7 +57,6 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
     });
 
     final url = Uri.parse('http://localhost/adicionar_produto.php');
-
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -53,6 +78,7 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
         _nomeController.clear();
         _quantidadeController.clear();
         _precoController.clear();
+        _precoSomenteLeitura = false;
       });
 
       Future.delayed(Duration(seconds: 3), () {
@@ -71,6 +97,16 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _nomeController.addListener(() {
+      if (_nomeController.text.length > 2) {
+        _buscarPrecoProduto(_nomeController.text);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
 
@@ -86,62 +122,12 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
           child: Column(
             children: [
               // Mensagem Sucesso
-              AnimatedOpacity(
-                opacity: _mostrarMensagemSucesso ? 1.0 : 0.0,
-                duration: Duration(milliseconds: 500),
-                child: _mensagemSucesso != null
-                    ? Container(
-                        width: double.infinity,
-                        margin: EdgeInsets.only(bottom: 16),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle, color: Colors.white),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _mensagemSucesso!,
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : SizedBox.shrink(),
-              ),
+              if (_mostrarMensagemSucesso && _mensagemSucesso != null)
+                _mensagemWidget(_mensagemSucesso!, Colors.green, Icons.check_circle),
 
               // Mensagem Erro
-              AnimatedOpacity(
-                opacity: _mostrarMensagemErro ? 1.0 : 0.0,
-                duration: Duration(milliseconds: 500),
-                child: _mensagemErro != null
-                    ? Container(
-                        width: double.infinity,
-                        margin: EdgeInsets.only(bottom: 16),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.error_outline, color: Colors.white),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _mensagemErro!,
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : SizedBox.shrink(),
-              ),
+              if (_mostrarMensagemErro && _mensagemErro != null)
+                _mensagemWidget(_mensagemErro!, Colors.red, Icons.error_outline),
 
               Form(
                 key: _formKey,
@@ -168,8 +154,13 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
                     SizedBox(height: 12),
                     TextFormField(
                       controller: _precoController,
+                      readOnly: _precoSomenteLeitura,
                       keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(labelText: 'Preço'),
+                      decoration: InputDecoration(
+                        labelText: _precoSomenteLeitura
+                            ? 'Preço (preenchido automaticamente)'
+                            : 'Preço',
+                      ),
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'Campo obrigatório';
                         final val = double.tryParse(value.replaceAll(',', '.'));
@@ -195,6 +186,34 @@ class _AdicionarProdutoPageState extends State<AdicionarProdutoPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mensagemWidget(String mensagem, Color cor, IconData icone) {
+    return AnimatedOpacity(
+      opacity: 1.0,
+      duration: Duration(milliseconds: 500),
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icone, color: Colors.white),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                mensagem,
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
         ),
       ),
     );
