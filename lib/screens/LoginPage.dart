@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:carousel_slider/carousel_slider.dart'; // Importe o pacote carousel_slider
 
 import 'HomePage.dart';
 import 'RegisterPage.dart';
@@ -111,11 +112,53 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/logo.png',
-                      height: isWideScreen ? 200 : 150,
+                    // Carousel Slider
+                    Card(
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Container(
+                        padding: EdgeInsets.all(10),
+                        child: CarouselSlider(
+                          options: CarouselOptions(
+                            height: isWideScreen ? 250 : 200,
+                            autoPlay: true,
+                            enlargeCenterPage: true,
+                            viewportFraction: 1.0,
+                            aspectRatio: 16 / 9,
+                            autoPlayCurve: Curves.fastOutSlowIn,
+                            autoPlayAnimationDuration: Duration(milliseconds: 800),
+                            enableInfiniteScroll: true,
+                          ),
+                          items: [
+                            'assets/banner0.png',
+                            'assets/banner3.png',
+                            'assets/cristal.png',
+                            'assets/bier0.png',
+                            'assets/bier3.png',
+                            'assets/logo.png',
+                          ].map((imagePath) {
+                            return Builder(
+                              builder: (BuildContext context) {
+                                return Container(
+                                  width: MediaQuery.of(context).size.width,
+                                  margin: EdgeInsets.symmetric(horizontal: 5.0),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    image: DecorationImage(
+                                      image: AssetImage(imagePath),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 30), // Espaçamento maior entre o carrossel e os campos
                     TextField(
                       controller: _emailController,
                       decoration: InputDecoration(
@@ -177,23 +220,6 @@ class _LoginPageState extends State<LoginPage> {
                               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                           ),
-                    //SizedBox(height: 10),
-                   // TextButton(
-                   //   onPressed: () {
-                   //     Navigator.push(
-                   //       context,
-                   //       MaterialPageRoute(builder: (context) => RegisterPage()),
-                   //     );
-                   //   },
-                    //  child: Text(
-                     //   "Ainda não tem uma conta? Registre-se",
-                     //   style: TextStyle(
-                     //     color: Color(0xFFF4B000),
-                     //     fontSize: 16,
-                      //    fontWeight: FontWeight.w500,
-                      //  ),
-                    //  ),
-                   // ),
                   ],
                 ),
               ),

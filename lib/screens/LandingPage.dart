@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lottie/lottie.dart'; // Importação do Lottie
 import 'LoginPage.dart';
 import 'HomePage.dart';
+import 'HomePublico.dart';
 
 class LandingPage extends StatefulWidget {
   @override
@@ -19,6 +21,8 @@ class _LandingPageState extends State<LandingPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
+    await Future.delayed(Duration(seconds: 2)); // só para simular carregamento
+
     if (isLoggedIn) {
       Navigator.pushReplacement(
         context,
@@ -35,8 +39,15 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Landing Page")),
-      body: Center(child: CircularProgressIndicator()),
+      backgroundColor: Colors.white, // fundo branco para animação
+      body: Center(
+        child: Lottie.asset(
+          'assets/loading.json',
+          width: 200,
+          height: 200,
+          fit: BoxFit.contain,
+        ),
+      ),
     );
   }
 }

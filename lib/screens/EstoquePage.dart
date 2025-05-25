@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:ninhodedjal/screens/EditarProdutoPage.dart';
+
 class EstoquePage extends StatefulWidget {
   final String tipoUsuario;
 
@@ -27,6 +29,7 @@ class _EstoquePageState extends State<EstoquePage> {
     try {
       final response = await http.get(Uri.parse('http://localhost/estoque.php'));
       final data = json.decode(response.body);
+      print('Resposta do servidor: ${response.body}');
       setState(() {
         produtos = produtosFiltrados = List<Map<String, dynamic>>.from(data['produtos']);
       });
@@ -107,7 +110,7 @@ class _EstoquePageState extends State<EstoquePage> {
                       ],
                     ),
                   )
-                : ListView.builder(
+                : ListView.builder( 
                     itemCount: produtosFiltrados.length,
                     itemBuilder: (_, index) {
                       final p = produtosFiltrados[index];
@@ -134,9 +137,39 @@ class _EstoquePageState extends State<EstoquePage> {
                             ),
                           ),
                           trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey.shade500),
-                          onTap: () {
-                            // Navegar para detalhes do produto (opcional)
-                          },
+                          //onTap: () async {
+                            
+                          //},
+                          //////
+                          onTap: widget.tipoUsuario == 'admin'
+                            ? () async {
+                              final produtoId = int.tryParse(p['id'].toString());
+                              final preco = double.tryParse(p['preco'].toString());
+                              final quantidade = int.tryParse(p['quantidade'].toString());
+
+                              if (produtoId == null || preco == null || quantidade == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Erro: Produto com dados incompletos.')),
+                                  );
+                                  return;
+                              }
+
+            final atualizado = await Navigator.push(context,MaterialPageRoute(builder: (_) => EditarProdutoPage(
+              id: produtoId,
+              nome: p['nome'],
+              precoAtual: preco,
+              quantidade: quantidade,
+            ),
+          ),
+        );
+
+        if (atualizado == true) {
+          _carregarProdutos(); // Recarrega após edição
+        }
+      }
+    : null,
+                          /////
+
                         ),
                       );
                     },

@@ -7,6 +7,8 @@ import 'LoginPage.dart';
 import 'ReciboPage.dart';
 import 'EstoquePage.dart';
 import 'RegisterPage.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+
 
 class HomePage extends StatefulWidget {
   @override
@@ -266,15 +268,18 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(Icons.exit_to_app),
-              title: Text('Sair'),
-              onTap: _logout,
-            ),
+            //ListTile(
+             // leading: Icon(Icons.settings),
+             // title: Text('parametres'),
+             // onTap: () {
+             //   Navigator.pushNamed(context, '/parametres');
+             // },
+            //),
+            
             if (tipoUsuario == 'admin')
               ListTile(
-                leading: Icon(Icons.report),
-                title: Text('Relatório de Vendas'),
+                leading: Icon(Icons.search),
+                title: Text('Busca venda por data'),
                 onTap: () {
                   Navigator.pushNamed(context, '/relatorioVendas');
                 },
@@ -295,6 +300,11 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
+              ListTile(
+              leading: Icon(Icons.exit_to_app),
+              title: Text('Sair'),
+              onTap: _logout,
+            ),
           ],
         ),
       ),

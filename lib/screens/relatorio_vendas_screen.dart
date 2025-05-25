@@ -59,7 +59,14 @@ class _RelatorioVendasPageState extends State<RelatorioVendasPage> {
       if (data['status'] == 'success') {
         setState(() {
           vendas = data['vendas'];
-          total = vendas.fold(0, (sum, item) => sum + double.parse(item['preco'].toString()));
+          //total = vendas.fold(0, (sum, item) => sum + double.parse(item['preco'].toString()));
+          ////////
+          total = vendas.fold(0, (sum, item) {
+          final preco = double.tryParse(item['preco'].toString()) ?? 0;
+          final quantidade = int.tryParse(item['quantidade'].toString()) ?? 0;
+          return sum + (preco * quantidade);
+      });
+      ///////
         });
       }
     }
@@ -69,7 +76,7 @@ class _RelatorioVendasPageState extends State<RelatorioVendasPage> {
   Widget build(BuildContext context) {
     final format = DateFormat('dd/MM/yyyy');
     return Scaffold(
-      appBar: AppBar(title: Text('Relatório de Vendas')),
+      appBar: AppBar(title: Text('Buscar vendas por data')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -96,7 +103,7 @@ class _RelatorioVendasPageState extends State<RelatorioVendasPage> {
             SizedBox(height: 10),
             ElevatedButton(
               onPressed: _buscarRelatorio,
-              child: Text("Buscar Relatório"),
+              child: Text("Buscar"),
             ),
             Divider(),
             Expanded(
@@ -122,7 +129,7 @@ class _RelatorioVendasPageState extends State<RelatorioVendasPage> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                'Total: R\$ $total',
+                'Total: XOF $total',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             )
