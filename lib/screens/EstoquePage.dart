@@ -29,7 +29,7 @@ class _EstoquePageState extends State<EstoquePage> {
     try {
       final response = await http.get(Uri.parse('http://localhost/estoque.php'));
       final data = json.decode(response.body);
-      print('Resposta do servidor: ${response.body}');
+      //print('Resposta do servidor: ${response.body}');
       setState(() {
         produtos = produtosFiltrados = List<Map<String, dynamic>>.from(data['produtos']);
       });

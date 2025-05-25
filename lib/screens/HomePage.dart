@@ -228,7 +228,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Color(0xFFF4B000),
         centerTitle: true,
-        title: Text("Sistema de Vendas", style: TextStyle(color: Colors.white, fontSize: 20)),
+        title: Text("Sistema de Vendas Cantinho de djal", style: TextStyle(color: Colors.white, fontSize: 20)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
